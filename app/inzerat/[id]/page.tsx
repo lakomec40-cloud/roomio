@@ -71,6 +71,13 @@ export default function InzeratDetail({ params }: { params: Promise<{ id: string
           </div>
 
           <p className="text-gray-600 leading-relaxed">{inzerat.popis}</p>
+          {inzerat.fotky && inzerat.fotky.length > 0 && (
+  <div className="flex gap-3 mt-6 flex-wrap">
+    {inzerat.fotky.map((url: string, i: number) => (
+      <img key={i} src={url} className="w-full rounded-xl object-cover max-h-80" />
+    ))}
+  </div>
+)}
         </div>
 {user && user.id === inzerat.user_id && (
   <button

@@ -6,6 +6,8 @@ export default function NovyInzerat() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [fotky, setFotky] = useState<File[]>([])
+  const [fotkyPreview, setFotkyPreview] = useState<string[]>([])
   const [form, setForm] = useState({
     typ: 'hladam',
     nazov: '',
@@ -24,13 +26,33 @@ export default function NovyInzerat() {
     getUser()
   }, [])
 
+  const handleFotky = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    setFotky(files)
+    setFotkyPreview(files.map(f => URL.createObjectURL(f)))
+  }
+
+  const uploadFotky = async (inzeratId: string): Promise<string[]> => {
+    const urls: string[] = []
+    for (const file of fotky) {
+      const path = user.id + '/' + inzeratId + '/' + file.name
+      const { error } = await supabase.storage.from('fotky').upload(path, file)
+      if (!error) {
+        const { data } = supabase.storage.from('fotky').getPublicUrl(path)
+        urls.push(data.publicUrl)
+      }
+    }
+    return urls
+  }
+
   const handleSubmit = async () => {
     if (!form.nazov || !form.popis || !form.cena) {
       setMessage('Vyplň všetky povinné polia')
       return
     }
     setLoading(true)
-    const { error } = await supabase.from('inzeraty').insert({
+
+    const { data, error } = await supabase.from('inzeraty').insert({
       user_id: user.id,
       typ: form.typ,
       nazov: form.nazov,
@@ -38,18 +60,25 @@ export default function NovyInzerat() {
       cena: parseInt(form.cena),
       plocha_m2: parseInt(form.plocha_m2) || null,
       lokalita: form.lokalita,
-    })
+    }).select().single()
+
     if (error) { setMessage(error.message); setLoading(false); return }
+
+    if (fotky.length > 0) {
+      const urls = await uploadFotky(data.id)
+      await supabase.from('inzeraty').update({ fotky: urls }).eq('id', data.id)
+    }
+
     window.location.href = '/inzeraty'
     setLoading(false)
   }
 
-  const lokality = ['Staré Mesto', 'Ružinov', 'Petržalka', 'Nové Mesto', 'Dúbravka', 'Karlova Ves', 'Rača', 'Vajnory']
+  const lokality = ['Staré Mesto', 'Ružinov', 'Petržalka', 'Nové Mesto', 'Dúbravka', 'Karlova Ves', 'Rača', 'Vajnory', 'Košice', 'Brno', 'Praha']
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="flex items-center justify-between px-8 py-5 bg-white border-b border-gray-100">
-        <a href="/dashboard" className="text-xl font-bold text-indigo-600">Roomio</a>
+      <nav className="flex items-center justify-between px-8 py-4 bg-white border-b border-gray-100">
+        <a href="/" className="text-xl font-bold text-indigo-600">Roomio</a>
         <a href="/dashboard" className="text-sm text-gray-500 hover:text-gray-900">← Späť</a>
       </nav>
 
@@ -129,6 +158,24 @@ export default function NovyInzerat() {
             >
               {lokality.map(l => <option key={l}>{l}</option>)}
             </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Fotky</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleFotky}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-indigo-400"
+            />
+            {fotkyPreview.length > 0 && (
+              <div className="flex gap-2 mt-3 flex-wrap">
+                {fotkyPreview.map((src, i) => (
+                  <img key={i} src={src} className="w-20 h-20 object-cover rounded-xl border border-gray-200" />
+                ))}
+              </div>
+            )}
           </div>
 
           {message && <p className="text-sm text-red-500">{message}</p>}
