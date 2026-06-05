@@ -1,15 +1,33 @@
+'use client'
+import { useEffect, useState } from 'react'
+import { supabase } from './supabase'
+
 export default function Home() {
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+  }, [])
+
   return (
     <div className="min-h-screen bg-white">
       <nav className="flex items-center justify-between px-8 py-5 border-b border-gray-100">
         <span className="text-xl font-bold text-indigo-600">Roomio</span>
         <div className="flex gap-3">
-          <a href="/login" className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
-            Prihlásiť sa
-          </a>
-          <a href="/register" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-            Registrovať sa
-          </a>
+          {user ? (
+            <a href="/dashboard" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              Môj účet
+            </a>
+          ) : (
+            <>
+              <a href="/login" className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">
+                Prihlásiť sa
+              </a>
+              <a href="/register" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                Registrovať sa
+              </a>
+            </>
+          )}
         </div>
       </nav>
 
@@ -22,14 +40,14 @@ export default function Home() {
           Prehľadná alternatíva k Facebook skupinám. Profily, fotky, filtre — všetko na jednom mieste.
         </p>
         <div className="flex gap-4 justify-center">
-          <a href="/hladam" className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-lg font-medium hover:bg-indigo-700">
+          <a href="/inzeraty" className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-lg font-medium hover:bg-indigo-700">
             Hľadám izbu
           </a>
-          <a href="/ponukam" className="px-8 py-4 border border-gray-200 text-gray-700 rounded-xl text-lg font-medium hover:bg-gray-50">
+          <a href="/inzerat/novy" className="px-8 py-4 border border-gray-200 text-gray-700 rounded-xl text-lg font-medium hover:bg-gray-50">
             Ponúkam izbu
           </a>
         </div>
       </main>
     </div>
-  );
+  )
 }
