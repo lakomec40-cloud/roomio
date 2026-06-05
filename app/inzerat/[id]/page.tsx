@@ -72,7 +72,18 @@ export default function InzeratDetail({ params }: { params: Promise<{ id: string
 
           <p className="text-gray-600 leading-relaxed">{inzerat.popis}</p>
         </div>
-
+{user && user.id === inzerat.user_id && (
+  <button
+    onClick={async () => {
+      if (!confirm('Naozaj chceš odstrániť tento inzerát?')) return
+      await supabase.from('inzeraty').delete().eq('id', inzerat.id)
+      window.location.href = '/inzeraty'
+    }}
+    className="mt-6 px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50"
+  >
+    Odstrániť inzerát
+  </button>
+)}
         <div className="bg-white border border-gray-100 rounded-2xl p-8">
           <h2 className="font-semibold text-gray-900 mb-4">O inzerentovi</h2>
           <div className="flex items-center gap-4 mb-4">
