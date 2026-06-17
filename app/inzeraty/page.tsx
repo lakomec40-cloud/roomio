@@ -1,9 +1,9 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '../supabase'
 
-export default function Inzeraty() {
+function InzeratyContent() {
   const searchParams = useSearchParams()
   const [inzeraty, setInzeraty] = useState<any[]>([])
   const [filter, setFilter] = useState('vsetky')
@@ -180,5 +180,13 @@ export default function Inzeraty() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function Inzeraty() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50" />}>
+      <InzeratyContent />
+    </Suspense>
   )
 }
