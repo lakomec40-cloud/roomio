@@ -47,6 +47,17 @@ export default function InzeratDetail({ params }: { params: Promise<{ id: string
 
   const spravy_href = "/spravy/" + inzerat.user_id
 
+  const balkonText: Record<string, string> = {
+    vlastny: 'Vlastný balkón',
+    spolocny: 'Spoločný balkón',
+    bez: 'Bez balkónu',
+  }
+
+  const statusText: Record<string, string> = {
+    zamestnany: 'Zamestnaný',
+    student: 'Študent',
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="flex items-center justify-between px-8 py-4 bg-white border-b border-gray-100">
@@ -56,11 +67,16 @@ export default function InzeratDetail({ params }: { params: Promise<{ id: string
 
       <main className="max-w-3xl mx-auto px-8 py-12">
         <div className="bg-white border border-gray-100 rounded-2xl p-8 mb-6">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
             <span className={inzerat.typ === 'hladam' ? 'text-xs px-2 py-1 rounded-full font-medium bg-blue-50 text-blue-600' : 'text-xs px-2 py-1 rounded-full font-medium bg-emerald-50 text-emerald-600'}>
               {inzerat.typ === 'hladam' ? 'Hľadám izbu' : 'Ponúkam izbu'}
             </span>
-            <span className="text-xs text-gray-400">{inzerat.lokalita}</span>
+            <span className="text-xs text-gray-400">{inzerat.lokalita}, {inzerat.mesto}</span>
+            {inzerat.balkon && inzerat.balkon !== 'bez' && (
+              <span className="text-xs px-2 py-1 rounded-full font-medium bg-amber-50 text-amber-600">
+                {balkonText[inzerat.balkon]}
+              </span>
+            )}
           </div>
 
           <h1 className="text-2xl font-bold text-gray-900 mb-4">{inzerat.nazov}</h1>
@@ -114,8 +130,20 @@ export default function InzeratDetail({ params }: { params: Promise<{ id: string
                   </div>
                   <div>
                     <p className="font-medium text-gray-900">{s.meno}{s.vek ? ', ' + s.vek : ''}</p>
-                    {s.povolanie && <p className="text-sm text-gray-500">{s.povolanie}</p>}
-                    {s.o_mne && <p className="text-sm text-gray-400 mt-1">{s.o_mne}</p>}
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {s.povolanie && <span className="text-sm text-gray-500">{s.povolanie}</span>}
+                      {s.status && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">
+                          {statusText[s.status] || s.status}
+                        </span>
+                      )}
+                      {s.pohlavie && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                          {s.pohlavie === 'muz' ? 'Muž' : 'Žena'}
+                        </span>
+                      )}
+                    </div>
+                    {s.o_mne && <p className="text-sm text-gray-400 mt-2">{s.o_mne}</p>}
                   </div>
                 </div>
               ))}
