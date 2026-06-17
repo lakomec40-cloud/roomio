@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
+import { mesta, zoznamMiest } from '../../mesta'
 
 export default function NovyInzerat() {
   const [user, setUser] = useState<any>(null)
@@ -15,7 +16,9 @@ export default function NovyInzerat() {
     popis: '',
     cena: '',
     plocha_m2: '',
+    mesto: 'Bratislava',
     lokalita: 'Staré Mesto',
+    balkon: 'bez',
   })
 
   useEffect(() => {
@@ -26,6 +29,10 @@ export default function NovyInzerat() {
     }
     getUser()
   }, [])
+
+  const zmenitMesto = (novemesto: string) => {
+    setForm({...form, mesto: novemesto, lokalita: mesta[novemesto][0]})
+  }
 
   const handleFotky = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -47,7 +54,7 @@ export default function NovyInzerat() {
   }
 
   const pridatSpoluobyvatela = () => {
-    setSpoluobyvatelia([...spoluobyvatelia, { meno: '', vek: '', povolanie: '', o_mne: '' }])
+    setSpoluobyvatelia([...spoluobyvatelia, { meno: '', vek: '', povolanie: '', o_mne: '', pohlavie: 'muz', status: 'zamestnany' }])
   }
 
   const upravitSpoluobyvatela = (index: number, field: string, value: string) => {
@@ -74,7 +81,9 @@ export default function NovyInzerat() {
       popis: form.popis,
       cena: parseInt(form.cena),
       plocha_m2: parseInt(form.plocha_m2) || null,
+      mesto: form.mesto,
       lokalita: form.lokalita,
+      balkon: form.balkon,
     }).select().single()
 
     if (error) { setMessage(error.message); setLoading(false); return }
@@ -94,6 +103,8 @@ export default function NovyInzerat() {
             vek: parseInt(s.vek) || null,
             povolanie: s.povolanie,
             o_mne: s.o_mne,
+            pohlavie: s.pohlavie,
+            status: s.status,
           }))
         )
       }
@@ -102,8 +113,6 @@ export default function NovyInzerat() {
     window.location.href = '/inzeraty'
     setLoading(false)
   }
-
-  const lokality = ['Staré Mesto', 'Ružinov', 'Petržalka', 'Nové Mesto', 'Dúbravka', 'Karlova Ves', 'Rača', 'Vajnory', 'Košice', 'Brno', 'Praha']
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -179,14 +188,39 @@ export default function NovyInzerat() {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Mesto</label>
+              <select
+                value={form.mesto}
+                onChange={e => zmenitMesto(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-indigo-400"
+              >
+                {zoznamMiest.map(m => <option key={m}>{m}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Časť mesta</label>
+              <select
+                value={form.lokalita}
+                onChange={e => setForm({...form, lokalita: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-indigo-400"
+              >
+                {mesta[form.mesto].map(l => <option key={l}>{l}</option>)}
+              </select>
+            </div>
+          </div>
+
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Lokalita</label>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Balkón</label>
             <select
-              value={form.lokalita}
-              onChange={e => setForm({...form, lokalita: e.target.value})}
+              value={form.balkon}
+              onChange={e => setForm({...form, balkon: e.target.value})}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-indigo-400"
             >
-              {lokality.map(l => <option key={l}>{l}</option>)}
+              <option value="bez">Bez balkónu</option>
+              <option value="vlastny">Vlastný balkón (k tejto izbe)</option>
+              <option value="spolocny">Spoločný balkón (pre celý byt)</option>
             </select>
           </div>
 
@@ -251,6 +285,24 @@ export default function NovyInzerat() {
                       onChange={e => upravitSpoluobyvatela(i, 'povolanie', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
                     />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <select
+                      value={s.pohlavie}
+                      onChange={e => upravitSpoluobyvatela(i, 'pohlavie', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
+                    >
+                      <option value="muz">Muž</option>
+                      <option value="zena">Žena</option>
+                    </select>
+                    <select
+                      value={s.status}
+                      onChange={e => upravitSpoluobyvatela(i, 'status', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
+                    >
+                      <option value="zamestnany">Zamestnaný</option>
+                      <option value="student">Študent</option>
+                    </select>
                   </div>
                   <textarea
                     placeholder="Krátke bio — záujmy, životný štýl..."
