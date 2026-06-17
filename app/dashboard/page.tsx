@@ -51,7 +51,7 @@ export default function Dashboard() {
       <main className="max-w-4xl mx-auto px-8 py-12">
         <h1 className="text-2xl font-bold text-gray-900 mb-8">Môj dashboard</h1>
 
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-3 gap-4 mb-8">
           <a href="/inzerat/novy" className="p-6 bg-white border border-gray-100 rounded-2xl hover:border-indigo-200 transition-colors">
             <div className="text-2xl mb-2">🏠</div>
             <h2 className="font-semibold text-gray-900">Pridať inzerát</h2>
@@ -60,7 +60,12 @@ export default function Dashboard() {
           <a href="/inzeraty" className="p-6 bg-white border border-gray-100 rounded-2xl hover:border-indigo-200 transition-colors">
             <div className="text-2xl mb-2">🔍</div>
             <h2 className="font-semibold text-gray-900">Hľadať izbu</h2>
-            <p className="text-sm text-gray-500 mt-1">Prezri si dostupné inzeráty v Bratislave</p>
+            <p className="text-sm text-gray-500 mt-1">Prezri si dostupné inzeráty na Slovensku</p>
+          </a>
+          <a href="/moje-inzeraty" className="p-6 bg-white border border-gray-100 rounded-2xl hover:border-indigo-200 transition-colors">
+            <div className="text-2xl mb-2">📋</div>
+            <h2 className="font-semibold text-gray-900">Moje inzeráty</h2>
+            <p className="text-sm text-gray-500 mt-1">Zobraz a správuj svoje vlastné inzeráty</p>
           </a>
         </div>
 
