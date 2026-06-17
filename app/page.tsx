@@ -42,7 +42,7 @@ export default function Home() {
           Vidíš profily všetkých v byte, ich vek, povolanie aj životný štýl. Žiadne prekvapenia.
         </p>
         <div className="flex gap-4 justify-center flex-wrap">
-          <a href="/inzeraty" className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-base font-medium hover:bg-indigo-700 transition-colors">
+          <a href="/inzeraty?filter=ponukam" className="px-8 py-4 bg-indigo-600 text-white rounded-xl text-base font-medium hover:bg-indigo-700 transition-colors">
             Hľadám izbu
           </a>
           <a href="/inzerat/novy" className="px-8 py-4 border border-gray-200 text-gray-700 rounded-xl text-base font-medium hover:bg-gray-50 transition-colors">

@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '../supabase'
 
 export default function Inzeraty() {
+  const searchParams = useSearchParams()
   const [inzeraty, setInzeraty] = useState<any[]>([])
   const [filter, setFilter] = useState('vsetky')
   const [loading, setLoading] = useState(true)
@@ -10,6 +12,11 @@ export default function Inzeraty() {
   const [showFiltre, setShowFiltre] = useState(false)
   const [lokalita, setLokalita] = useState('vsetky')
   const [cenaMax, setCenaMax] = useState(1000)
+
+  useEffect(() => {
+    const urlFilter = searchParams.get('filter')
+    if (urlFilter) setFilter(urlFilter)
+  }, [searchParams])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
