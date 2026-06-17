@@ -5,6 +5,7 @@ import { supabase } from '../../supabase'
 export default function InzeratDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [inzerat, setInzerat] = useState<any>(null)
+  const [spoluobyvatelia, setSpoluobyvatelia] = useState<any[]>([])
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -20,6 +21,13 @@ export default function InzeratDetail({ params }: { params: Promise<{ id: string
         .single()
 
       setInzerat(data)
+
+      const { data: spolu } = await supabase
+        .from('spoluobyvatelia')
+        .select('*')
+        .eq('inzerat_id', id)
+
+      setSpoluobyvatelia(spolu || [])
       setLoading(false)
     }
     fetchData()
@@ -41,7 +49,7 @@ export default function InzeratDetail({ params }: { params: Promise<{ id: string
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="flex items-center justify-between px-8 py-5 bg-white border-b border-gray-100">
+      <nav className="flex items-center justify-between px-8 py-4 bg-white border-b border-gray-100">
         <a href="/" className="text-xl font-bold text-indigo-600">Roomio</a>
         <a href="/inzeraty" className="text-sm text-gray-500 hover:text-gray-900">← Späť na inzeráty</a>
       </nav>
@@ -49,7 +57,7 @@ export default function InzeratDetail({ params }: { params: Promise<{ id: string
       <main className="max-w-3xl mx-auto px-8 py-12">
         <div className="bg-white border border-gray-100 rounded-2xl p-8 mb-6">
           <div className="flex items-center gap-2 mb-4">
-            <span className={inzerat.typ === 'hladam' ? 'text-xs px-2 py-1 rounded-full font-medium bg-blue-50 text-blue-600' : 'text-xs px-2 py-1 rounded-full font-medium bg-green-50 text-green-600'}>
+            <span className={inzerat.typ === 'hladam' ? 'text-xs px-2 py-1 rounded-full font-medium bg-blue-50 text-blue-600' : 'text-xs px-2 py-1 rounded-full font-medium bg-emerald-50 text-emerald-600'}>
               {inzerat.typ === 'hladam' ? 'Hľadám izbu' : 'Ponúkam izbu'}
             </span>
             <span className="text-xs text-gray-400">{inzerat.lokalita}</span>
@@ -71,26 +79,50 @@ export default function InzeratDetail({ params }: { params: Promise<{ id: string
           </div>
 
           <p className="text-gray-600 leading-relaxed">{inzerat.popis}</p>
+
+          {user && user.id === inzerat.user_id && (
+            <button
+              onClick={async () => {
+                if (!confirm('Naozaj chceš odstrániť tento inzerát?')) return
+                await supabase.from('inzeraty').delete().eq('id', inzerat.id)
+                window.location.href = '/inzeraty'
+              }}
+              className="mt-6 px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50"
+            >
+              Odstrániť inzerát
+            </button>
+          )}
+
           {inzerat.fotky && inzerat.fotky.length > 0 && (
-  <div className="flex gap-3 mt-6 flex-wrap">
-    {inzerat.fotky.map((url: string, i: number) => (
-      <img key={i} src={url} className="w-full rounded-xl object-cover max-h-80" />
-    ))}
-  </div>
-)}
+            <div className="flex gap-3 mt-6 flex-wrap">
+              {inzerat.fotky.map((url: string, i: number) => (
+                <img key={i} src={url} className="w-full rounded-xl object-cover max-h-80" />
+              ))}
+            </div>
+          )}
         </div>
-{user && user.id === inzerat.user_id && (
-  <button
-    onClick={async () => {
-      if (!confirm('Naozaj chceš odstrániť tento inzerát?')) return
-      await supabase.from('inzeraty').delete().eq('id', inzerat.id)
-      window.location.href = '/inzeraty'
-    }}
-    className="mt-6 px-4 py-2 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50"
-  >
-    Odstrániť inzerát
-  </button>
-)}
+
+        {spoluobyvatelia.length > 0 && (
+          <div className="bg-white border border-gray-100 rounded-2xl p-8 mb-6">
+            <h2 className="font-semibold text-gray-900 mb-1">Kto tu už býva</h2>
+            <p className="text-sm text-gray-400 mb-5">Spoznaj svojich budúcich spolubývajúcich</p>
+            <div className="flex flex-col gap-4">
+              {spoluobyvatelia.map(s => (
+                <div key={s.id} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-medium text-indigo-600 flex-shrink-0">
+                    {s.meno?.[0]?.toUpperCase() || '?'}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{s.meno}{s.vek ? ', ' + s.vek : ''}</p>
+                    {s.povolanie && <p className="text-sm text-gray-500">{s.povolanie}</p>}
+                    {s.o_mne && <p className="text-sm text-gray-400 mt-1">{s.o_mne}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="bg-white border border-gray-100 rounded-2xl p-8">
           <h2 className="font-semibold text-gray-900 mb-4">O inzerentovi</h2>
           <div className="flex items-center gap-4 mb-4">

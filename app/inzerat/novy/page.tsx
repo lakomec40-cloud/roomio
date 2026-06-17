@@ -8,6 +8,7 @@ export default function NovyInzerat() {
   const [message, setMessage] = useState('')
   const [fotky, setFotky] = useState<File[]>([])
   const [fotkyPreview, setFotkyPreview] = useState<string[]>([])
+  const [spoluobyvatelia, setSpoluobyvatelia] = useState<any[]>([])
   const [form, setForm] = useState({
     typ: 'hladam',
     nazov: '',
@@ -45,6 +46,20 @@ export default function NovyInzerat() {
     return urls
   }
 
+  const pridatSpoluobyvatela = () => {
+    setSpoluobyvatelia([...spoluobyvatelia, { meno: '', vek: '', povolanie: '', o_mne: '' }])
+  }
+
+  const upravitSpoluobyvatela = (index: number, field: string, value: string) => {
+    const novi = [...spoluobyvatelia]
+    novi[index] = { ...novi[index], [field]: value }
+    setSpoluobyvatelia(novi)
+  }
+
+  const odstranitSpoluobyvatela = (index: number) => {
+    setSpoluobyvatelia(spoluobyvatelia.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = async () => {
     if (!form.nazov || !form.popis || !form.cena) {
       setMessage('Vyplň všetky povinné polia')
@@ -67,6 +82,21 @@ export default function NovyInzerat() {
     if (fotky.length > 0) {
       const urls = await uploadFotky(data.id)
       await supabase.from('inzeraty').update({ fotky: urls }).eq('id', data.id)
+    }
+
+    if (form.typ === 'ponukam' && spoluobyvatelia.length > 0) {
+      const platni = spoluobyvatelia.filter(s => s.meno.trim() !== '')
+      if (platni.length > 0) {
+        await supabase.from('spoluobyvatelia').insert(
+          platni.map(s => ({
+            inzerat_id: data.id,
+            meno: s.meno,
+            vek: parseInt(s.vek) || null,
+            povolanie: s.povolanie,
+            o_mne: s.o_mne,
+          }))
+        )
+      }
     }
 
     window.location.href = '/inzeraty'
@@ -177,6 +207,62 @@ export default function NovyInzerat() {
               </div>
             )}
           </div>
+
+          {form.typ === 'ponukam' && (
+            <div className="border-t border-gray-100 pt-6">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-medium text-gray-700">Kto už býva v byte?</label>
+                <button
+                  onClick={pridatSpoluobyvatela}
+                  className="text-sm text-indigo-600 hover:underline"
+                >
+                  + Pridať osobu
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mb-4">Pomôž záujemcom vedieť s kým by bývali. Nepovinné.</p>
+
+              {spoluobyvatelia.map((s, i) => (
+                <div key={i} className="bg-gray-50 rounded-xl p-4 mb-3 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-600">Osoba {i + 1}</span>
+                    <button onClick={() => odstranitSpoluobyvatela(i)} className="text-xs text-red-500 hover:underline">
+                      Odstrániť
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Meno"
+                    value={s.meno}
+                    onChange={e => upravitSpoluobyvatela(i, 'meno', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="number"
+                      placeholder="Vek"
+                      value={s.vek}
+                      onChange={e => upravitSpoluobyvatela(i, 'vek', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Povolanie"
+                      value={s.povolanie}
+                      onChange={e => upravitSpoluobyvatela(i, 'povolanie', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-indigo-400"
+                    />
+                  </div>
+                  <textarea
+                    placeholder="Krátke bio — záujmy, životný štýl..."
+                    value={s.o_mne}
+                    onChange={e => upravitSpoluobyvatela(i, 'o_mne', e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-indigo-400 resize-none"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
           {message && <p className="text-sm text-red-500">{message}</p>}
 
