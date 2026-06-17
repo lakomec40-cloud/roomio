@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '../supabase'
+import { mesta, zoznamMiest } from '../mesta'
 
 function InzeratyContent() {
   const searchParams = useSearchParams()
@@ -10,8 +11,17 @@ function InzeratyContent() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [showFiltre, setShowFiltre] = useState(false)
+
+  const [mesto, setMesto] = useState('vsetky')
   const [lokalita, setLokalita] = useState('vsetky')
   const [cenaMax, setCenaMax] = useState(1000)
+  const [plochaMin, setPlochaMin] = useState(0)
+  const [balkon, setBalkon] = useState('vsetky')
+
+  const [spoluPohlavie, setSpoluPohlavie] = useState('vsetky')
+  const [spoluStatus, setSpoluStatus] = useState('vsetky')
+  const [spoluVekMin, setSpoluVekMin] = useState(18)
+  const [spoluVekMax, setSpoluVekMax] = useState(99)
 
   useEffect(() => {
     const urlFilter = searchParams.get('filter')
@@ -22,30 +32,57 @@ function InzeratyContent() {
     supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
   }, [])
 
+  const zmenitMesto = (novemesto: string) => {
+    setMesto(novemesto)
+    setLokalita('vsetky')
+  }
+
+  const maAktivnyFilterSpolu = spoluPohlavie !== 'vsetky' || spoluStatus !== 'vsetky' || spoluVekMin > 18 || spoluVekMax < 99
+
   useEffect(() => {
     const fetchInzeraty = async () => {
       setLoading(true)
+
+      let spoluIds: string[] | null = null
+      if (maAktivnyFilterSpolu) {
+        let spoluQuery = supabase.from('spoluobyvatelia').select('inzerat_id')
+        if (spoluPohlavie !== 'vsetky') spoluQuery = spoluQuery.eq('pohlavie', spoluPohlavie)
+        if (spoluStatus !== 'vsetky') spoluQuery = spoluQuery.eq('status', spoluStatus)
+        spoluQuery = spoluQuery.gte('vek', spoluVekMin).lte('vek', spoluVekMax)
+
+        const { data: spoluData } = await spoluQuery
+        spoluIds = Array.from(new Set((spoluData || []).map(s => s.inzerat_id)))
+
+        if (spoluIds.length === 0) {
+          setInzeraty([])
+          setLoading(false)
+          return
+        }
+      }
+
       let query = supabase
         .from('inzeraty')
         .select('*, profiles(meno, fotka_url)')
         .order('created_at', { ascending: false })
 
-      if (filter !== 'vsetky') {
-        query = query.eq('typ', filter)
-      }
-      if (lokalita !== 'vsetky') {
-        query = query.eq('lokalita', lokalita)
-      }
+      if (filter !== 'vsetky') query = query.eq('typ', filter)
+      if (mesto !== 'vsetky') query = query.eq('mesto', mesto)
+      if (lokalita !== 'vsetky') query = query.eq('lokalita', lokalita)
+      if (balkon !== 'vsetky') query = query.eq('balkon', balkon)
       query = query.lte('cena', cenaMax)
+      if (plochaMin > 0) query = query.gte('plocha_m2', plochaMin)
+      if (spoluIds) query = query.in('id', spoluIds)
 
       const { data } = await query
       setInzeraty(data || [])
       setLoading(false)
     }
     fetchInzeraty()
-  }, [filter, lokalita, cenaMax])
+  }, [filter, mesto, lokalita, cenaMax, plochaMin, balkon, spoluPohlavie, spoluStatus, spoluVekMin, spoluVekMax])
 
-  const lokality = ['vsetky', 'Staré Mesto', 'Ružinov', 'Petržalka', 'Nové Mesto', 'Dúbravka', 'Karlova Ves', 'Rača', 'Vajnory', 'Košice', 'Brno', 'Praha']
+  const aktivnychFiltrov = [
+    mesto !== 'vsetky', cenaMax < 1000, plochaMin > 0, balkon !== 'vsetky', maAktivnyFilterSpolu,
+  ].filter(Boolean).length
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -66,7 +103,7 @@ function InzeratyContent() {
       <div className="max-w-6xl mx-auto px-8 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Inzeráty na Slovensku</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Inzeráty na Slovensku a v Česku</h1>
             <p className="text-sm text-gray-400 mt-1">{inzeraty.length} inzerátov</p>
           </div>
           <a href="/inzerat/novy" className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors">
@@ -92,33 +129,131 @@ function InzeratyContent() {
             onClick={() => setShowFiltre(!showFiltre)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors border ${showFiltre ? 'bg-indigo-50 border-indigo-300 text-indigo-600' : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-300'}`}
           >
-            ⚙ Filtre {(lokalita !== 'vsetky' || cenaMax < 1000) && '•'}
+            ⚙ Filtre {aktivnychFiltrov > 0 && `(${aktivnychFiltrov})`}
           </button>
         </div>
 
         {showFiltre && (
-          <div className="bg-white border border-gray-100 rounded-2xl p-6 mb-8 grid grid-cols-2 gap-6">
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 mb-8 flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Mesto</label>
+                <select
+                  value={mesto}
+                  onChange={e => zmenitMesto(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-indigo-400"
+                >
+                  <option value="vsetky">Všetky mestá</option>
+                  {zoznamMiest.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Časť mesta</label>
+                <select
+                  value={lokalita}
+                  onChange={e => setLokalita(e.target.value)}
+                  disabled={mesto === 'vsetky'}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-indigo-400 disabled:bg-gray-50 disabled:text-gray-400"
+                >
+                  <option value="vsetky">Všetky časti</option>
+                  {mesto !== 'vsetky' && mesta[mesto].map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Maximálna cena: {cenaMax} €</label>
+                <input
+                  type="range"
+                  min={50}
+                  max={1000}
+                  step={10}
+                  value={cenaMax}
+                  onChange={e => setCenaMax(parseInt(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Minimálna plocha: {plochaMin} m²</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={plochaMin}
+                  onChange={e => setPlochaMin(parseInt(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Lokalita</label>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Balkón</label>
               <select
-                value={lokalita}
-                onChange={e => setLokalita(e.target.value)}
+                value={balkon}
+                onChange={e => setBalkon(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-indigo-400"
               >
-                {lokality.map(l => <option key={l} value={l}>{l === 'vsetky' ? 'Všetky lokality' : l}</option>)}
+                <option value="vsetky">Nezáleží</option>
+                <option value="vlastny">Vlastný balkón</option>
+                <option value="spolocny">Spoločný balkón</option>
+                <option value="bez">Bez balkónu</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Maximálna cena: {cenaMax} €</label>
-              <input
-                type="range"
-                min={50}
-                max={1000}
-                step={10}
-                value={cenaMax}
-                onChange={e => setCenaMax(parseInt(e.target.value))}
-                className="w-full"
-              />
+
+            <div className="border-t border-gray-100 pt-6">
+              <p className="text-sm font-medium text-gray-700 mb-4">Spolubývajúci</p>
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="text-xs text-gray-500 mb-2 block">Pohlavie</label>
+                  <select
+                    value={spoluPohlavie}
+                    onChange={e => setSpoluPohlavie(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-indigo-400"
+                  >
+                    <option value="vsetky">Nezáleží</option>
+                    <option value="muz">Muž</option>
+                    <option value="zena">Žena</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-2 block">Status</label>
+                  <select
+                    value={spoluStatus}
+                    onChange={e => setSpoluStatus(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:border-indigo-400"
+                  >
+                    <option value="vsetky">Nezáleží</option>
+                    <option value="zamestnany">Zamestnaný</option>
+                    <option value="student">Študent</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="text-xs text-gray-500 mb-2 block">Vek od: {spoluVekMin}</label>
+                  <input
+                    type="range"
+                    min={18}
+                    max={99}
+                    value={spoluVekMin}
+                    onChange={e => setSpoluVekMin(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-2 block">Vek do: {spoluVekMax}</label>
+                  <input
+                    type="range"
+                    min={18}
+                    max={99}
+                    value={spoluVekMax}
+                    onChange={e => setSpoluVekMax(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -155,7 +290,7 @@ function InzeratyContent() {
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${inzerat.typ === 'hladam' ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'}`}>
                     {inzerat.typ === 'hladam' ? 'Hľadám' : 'Ponúkam'}
                   </span>
-                  <span className="text-xs text-gray-400">{inzerat.lokalita}</span>
+                  <span className="text-xs text-gray-400">{inzerat.lokalita}, {inzerat.mesto}</span>
                 </div>
                 <h2 className="font-semibold text-gray-900 mb-1 truncate">{inzerat.nazov}</h2>
                 <p className="text-gray-400 text-xs line-clamp-2 leading-relaxed mb-3">{inzerat.popis}</p>
