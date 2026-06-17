@@ -304,9 +304,13 @@ function InzeratyContent() {
                   )}
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-50 flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-medium text-indigo-600">
-                    {inzerat.profiles?.meno?.[0]?.toUpperCase() || '?'}
-                  </div>
+                  {inzerat.profiles?.fotka_url ? (
+                    <img src={inzerat.profiles.fotka_url} className="w-6 h-6 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-medium text-indigo-600">
+                      {inzerat.profiles?.meno?.[0]?.toUpperCase() || '?'}
+                    </div>
+                  )}
                   <span className="text-xs text-gray-400 truncate">{inzerat.profiles?.meno || 'Anonymný užívateľ'}</span>
                 </div>
               </div>

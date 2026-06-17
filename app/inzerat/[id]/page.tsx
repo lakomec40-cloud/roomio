@@ -154,9 +154,13 @@ export default function InzeratDetail({ params }: { params: Promise<{ id: string
         <div className="bg-white border border-gray-100 rounded-2xl p-8">
           <h2 className="font-semibold text-gray-900 mb-4">O inzerentovi</h2>
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-lg font-medium text-indigo-600">
-              {inzerat.profiles?.meno?.[0]?.toUpperCase() || '?'}
-            </div>
+            {inzerat.profiles?.fotka_url ? (
+              <img src={inzerat.profiles.fotka_url} className="w-12 h-12 rounded-full object-cover" />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-lg font-medium text-indigo-600">
+                {inzerat.profiles?.meno?.[0]?.toUpperCase() || '?'}
+              </div>
+            )}
             <div>
               <p className="font-medium text-gray-900">{inzerat.profiles?.meno || 'Anonymný užívateľ'}</p>
               {inzerat.profiles?.povolanie && <p className="text-sm text-gray-500">{inzerat.profiles.povolanie}</p>}
